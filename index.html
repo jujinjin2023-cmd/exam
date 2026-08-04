@@ -126,6 +126,7 @@
             <span><i class="fas fa-list"></i> 共 <span class="num" id="totalQ">0</span> 题</span>
             <span><i class="fas fa-check-circle"></i> 已答 <span class="num highlight" id="answeredCount">0</span></span>
             <span><i class="fas fa-tag"></i> <span id="typeStats">-</span></span>
+            <span><i class="far fa-clock"></i> <span id="timerDisplay">00:00</span></span>
         </div>
         <div id="questionsContainer"></div>
         <div class="submit-area">
@@ -143,6 +144,7 @@
                 <div class="stat correct"><div class="num" id="correctCount">0</div><div class="label"><i class="fas fa-check-circle"></i> 正确</div></div>
                 <div class="stat wrong"><div class="num" id="wrongCount">0</div><div class="label"><i class="fas fa-times-circle"></i> 错误</div></div>
                 <div class="stat"><div class="num" id="accuracy">0%</div><div class="label"><i class="fas fa-percent"></i> 正确率</div></div>
+                <div class="stat"><div class="num" id="durationDisplay">0s</div><div class="label"><i class="far fa-clock"></i> 用时</div></div>
             </div>
         </div>
         <div style="border-top:2px solid #e9edf2; padding-top:20px; margin-top:20px;">
@@ -221,6 +223,9 @@
     let currentUser = null;
     let currentQuestions = [];
     let userAnswers = {};
+    let examStartTime = null;
+    let timerInterval = null;
+    let seconds = 0;
 
     // ============================================================
     //  工具函数
@@ -233,6 +238,12 @@
 
     function getOptionLabel(idx) {
         return String.fromCharCode(65 + idx);
+    }
+
+    function formatTime(sec) {
+        const m = String(Math.floor(sec / 60)).padStart(2, '0');
+        const s = String(sec % 60).padStart(2, '0');
+        return `${m}:${s}`;
     }
 
     // ============================================================
@@ -294,6 +305,7 @@
     function logout() {
         localStorage.removeItem('user');
         currentUser = null;
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
         renderNav();
         showPage('loginPage');
         $('loginPassword').value = '';
@@ -309,7 +321,6 @@
             info.classList.remove('hidden');
             logoutBtn.classList.remove('hidden');
             startBtn.classList.add('hidden');
-            // 如果角色是 admin 或 superadmin，显示管理后台按钮
             if (currentUser.role === 'admin' || currentUser.role === 'superadmin') {
                 adminBtn.classList.remove('hidden');
             } else {
@@ -326,8 +337,18 @@
     // ============================================================
     //  考试逻辑
     // ============================================================
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        seconds = 0;
+        timerInterval = setInterval(() => {
+            seconds++;
+            $('timerDisplay').textContent = formatTime(seconds);
+        }, 1000);
+    }
+
     async function startExam() {
         if (!currentUser) return alert('请先登录');
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
         try {
             const res = await fetch(`${API_BASE}/api/questions`);
             const data = await res.json();
@@ -336,6 +357,8 @@
                 renderQuestions(data);
                 userAnswers = {};
                 updateAnsweredCount();
+                examStartTime = Date.now();
+                startTimer();
                 showPage('examPage');
             } else {
                 alert('获取题目失败');
@@ -349,7 +372,6 @@
         const container = $('questionsContainer');
         container.innerHTML = '';
         $('totalQ').textContent = questions.length;
-        // 统计题型
         const types = {};
         questions.forEach(q => { types[q.type] = (types[q.type] || 0) + 1; });
         $('typeStats').textContent =
@@ -423,6 +445,14 @@
         } else {
             if (!confirm('确定提交答卷吗？')) return;
         }
+
+        // 计算总用时（秒）
+        let duration = 0;
+        if (examStartTime) {
+            duration = Math.floor((Date.now() - examStartTime) / 1000);
+        }
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
         const answers = [];
         for (const idx in userAnswers) {
             const q = currentQuestions[idx];
@@ -439,7 +469,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': String(currentUser.id)
                 },
-                body: JSON.stringify({ answers })
+                body: JSON.stringify({ answers, duration })
             });
             const data = await res.json();
             if (data.details) {
@@ -459,6 +489,12 @@
         $('correctCount').textContent = data.correct;
         $('wrongCount').textContent = data.wrong;
         $('accuracy').textContent = data.accuracy + '%';
+        // 显示用时
+        if (data.duration !== undefined) {
+            $('durationDisplay').textContent = data.duration + 's';
+        } else {
+            $('durationDisplay').textContent = '--';
+        }
 
         const container = $('detailItems');
         container.innerHTML = '';
@@ -495,6 +531,7 @@
 
     function resetExam() {
         if (!confirm('重新开始将丢失当前进度，确定吗？')) return;
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
         startExam();
     }
 
@@ -509,7 +546,6 @@
         showPage('adminPage');
         await loadQuestionsAdmin();
         await loadAllResults();
-        // 如果是 superadmin，显示用户管理
         if (currentUser.role === 'superadmin') {
             $('userManagement').classList.remove('hidden');
             await loadUserList();
@@ -565,7 +601,8 @@
                 const div = document.createElement('div');
                 div.style.padding = '6px 0';
                 div.style.borderBottom = '1px solid #f1f5f9';
-                div.textContent = `${r.username} - ${r.question_content} - 作答:${r.user_answer || '未作答'} - 正确:${r.is_correct ? '是' : '否'}`;
+                const durationText = r.duration_seconds ? ` 用时: ${r.duration_seconds}s` : '';
+                div.textContent = `${r.username} - ${r.question_content} - 作答:${r.user_answer || '未作答'} - 正确:${r.is_correct ? '是' : '否'}${durationText}`;
                 container.appendChild(div);
             });
         } catch (e) {
@@ -622,7 +659,7 @@
                 });
                 roleSelect.onchange = async function() {
                     if (!confirm(`确定将用户 ${u.username} 的角色改为 ${this.value} 吗？`)) {
-                        this.value = u.role; // 恢复
+                        this.value = u.role;
                         return;
                     }
                     try {
@@ -805,10 +842,9 @@
         }
         showPage('loginPage');
         renderNav();
-        cancelEdit(); // 初始化编辑器
+        cancelEdit();
     };
 
-    // 暴露全局函数供按钮调用
     window.startExam = startExam;
     window.submitExam = submitExam;
     window.resetExam = resetExam;
