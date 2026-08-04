@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线考试平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { max-width: 1000px; width: 100%; background: white; border-radius: 32px; padding: 28px 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
+        .hidden { display: none !important; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; border: none; border-radius: 60px; font-weight: 600; font-size: 15px; cursor: pointer; transition: 0.15s; background: #e2e8f0; color: #1e293b; }
+        .btn-primary { background: #3b82f6; color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.25); }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline { background: transparent; border: 2px solid #e2e8f0; }
+        .btn-outline:hover { background: #f1f5f9; }
+        .btn-sm { padding: 4px 14px; font-size: 13px; }
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; border-bottom: 2px solid #e9edf2; padding-bottom: 16px; }
+        .nav-bar h1 { font-size: 24px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+        .nav-bar h1 i { color: #3b82f6; }
+        .nav-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .user-badge { background: #eef2ff; padding: 4px 16px; border-radius: 60px; font-size: 14px; font-weight: 500; }
+        .page { display: none; }
+        .page.active { display: block; }
+
+        .form-group { margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+        .form-group label { width: 80px; font-weight: 600; font-size: 14px; color: #334155; }
+        .form-group input, .form-group select, .form-group textarea { flex: 1; min-width: 200px; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-family: inherit; transition: 0.1s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #3b82f6; }
+
+        .question-card { background: #fafbfc; border: 1px solid #e9edf2; border-radius: 18px; padding: 20px 24px; margin-bottom: 18px; }
+        .q-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+        .q-number { background: #eef2ff; color: #4f46e5; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+        .q-type { font-size: 12px; font-weight: 600; padding: 2px 14px; border-radius: 100px; background: #e2e8f0; color: #334155; }
+        .q-type.single { background: #dbeafe; color: #1d4ed8; }
+        .q-type.multi { background: #fce7f3; color: #be185d; }
+        .q-type.judge { background: #d1fae5; color: #047857; }
+        .q-content { font-size: 17px; font-weight: 500; margin: 8px 0 14px 0; color: #0f172a; }
+        .options { display: flex; flex-direction: column; gap: 6px; padding-left: 4px; }
+        .option { display: flex; align-items: center; gap: 12px; padding: 8px 14px; border-radius: 10px; background: white; border: 1.5px solid transparent; cursor: pointer; transition: 0.1s; }
+        .option:hover { background: #f1f5f9; border-color: #d1d5db; }
+        .option input[type="radio"], .option input[type="checkbox"] { width: 17px; height: 17px; accent-color: #3b82f6; cursor: pointer; flex-shrink: 0; }
+        .option label { font-size: 15px; cursor: pointer; flex: 1; }
+        .opt-label { font-weight: 600; color: #64748b; margin-right: 6px; }
+
+        .submit-area { margin-top: 28px; display: flex; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+        .info-bar { background: #f8fafc; border-radius: 16px; padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 12px 28px; margin-bottom: 24px; font-size: 15px; }
+        .info-bar span { display: flex; align-items: center; gap: 6px; }
+        .info-bar .num { font-weight: 700; color: #0f172a; }
+        .highlight { color: #3b82f6; }
+
+        .result-summary { text-align: center; padding: 20px 0; }
+        .score-circle { display: inline-flex; align-items: center; justify-content: center; width: 110px; height: 110px; border-radius: 50%; background: #eef2ff; color: #4f46e5; font-size: 44px; font-weight: 800; }
+        .score-circle .total { font-size: 22px; font-weight: 400; color: #94a3b8; }
+        .result-stats { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 16px; }
+        .stat .num { font-size: 26px; font-weight: 700; }
+        .stat.correct .num { color: #10b981; }
+        .stat.wrong .num { color: #ef4444; }
+        .stat .label { font-size: 14px; color: #64748b; }
+
+        .detail-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f1f5f9; align-items: flex-start; }
+        .d-icon { font-size: 20px; width: 30px; text-align: center; margin-top: 2px; }
+        .d-icon.correct { color: #10b981; } .d-icon.wrong { color: #ef4444; }
+        .d-body { flex: 1; }
+        .d-q { font-weight: 500; }
+        .d-meta { font-size: 14px; color: #64748b; display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 4px; }
+        .tag { padding: 0 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .tag-correct { background: #d1fae5; color: #065f46; }
+        .tag-wrong { background: #fee2e2; color: #991b1b; }
+
+        .admin-panel { background: #f8fafc; border-radius: 20px; padding: 24px; margin-top: 10px; }
+        .admin-panel h3 { margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .admin-stats { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+        .admin-stats .badge { background: white; padding: 6px 18px; border-radius: 60px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .question-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e2e8f0; gap: 12px; flex-wrap: wrap; }
+        .question-item .q-text { flex: 1; min-width: 150px; }
+        .question-item .q-meta { display: flex; gap: 8px; align-items: center; }
+
+        .options-editor { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+        .options-editor input { width: auto; flex: 1 1 120px; padding: 6px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; }
+        .options-editor .opt-label-static { font-weight: 600; color: #475569; }
+
+        .empty-state { padding: 30px; text-align: center; color: #94a3b8; }
+
+        @media (max-width: 640px) { .container { padding: 16px; } .form-group { flex-direction: column; align-items: stretch; } .form-group label { width: auto; } }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <!-- 导航栏 -->
+    <div class="nav-bar">
+        <h1><i class="fas fa-graduation-cap"></i> 考试平台</h1>
+        <div class="nav-actions">
+            <span id="userInfo" class="user-badge hidden"></span>
+            <button class="btn btn-outline btn-sm hidden" id="logoutBtn" onclick="logout()">退出</button>
+            <button class="btn btn-primary btn-sm hidden" id="adminBtn" onclick="showAdmin()">管理后台</button>
+            <button class="btn btn-primary btn-sm" id="startExamBtn" onclick="startExam()">开始考试</button>
+        </div>
+    </div>
+
+    <!-- ===== 登录/注册页 ===== -->
+    <div id="loginPage" class="page active">
+        <h2 style="margin-bottom:20px;">登录</h2>
+        <div class="form-group"><label>用户名</label><input type="text" id="loginUsername" placeholder="请输入用户名" /></div>
+        <div class="form-group"><label>密码</label><input type="password" id="loginPassword" placeholder="请输入密码" /></div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            <button class="btn btn-primary" onclick="login()">登录</button>
+            <span>还没有账号？ <a href="#" onclick="toggleRegister()">立即注册</a></span>
+        </div>
+        <div id="registerForm" class="hidden" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
+            <h3>注册新账号</h3>
+            <div class="form-group"><label>用户名</label><input type="text" id="regUsername" placeholder="请设置用户名" /></div>
+            <div class="form-group"><label>密码</label><input type="password" id="regPassword" placeholder="请设置密码" /></div>
+            <button class="btn btn-success" onclick="register()">注册</button>
+        </div>
+    </div>
+
+    <!-- ===== 考试页 ===== -->
+    <div id="examPage" class="page">
+        <div class="info-bar">
+            <span><i class="fas fa-list"></i> 共 <span class="num" id="totalQ">0</span> 题</span>
+            <span><i class="fas fa-check-circle"></i> 已答 <span class="num highlight" id="answeredCount">0</span></span>
+            <span><i class="fas fa-tag"></i> <span id="typeStats">-</span></span>
+        </div>
+        <div id="questionsContainer"></div>
+        <div class="submit-area">
+            <button class="btn btn-outline" onclick="resetExam()"><i class="fas fa-redo"></i> 重新开始</button>
+            <button class="btn btn-success" onclick="submitExam()"><i class="fas fa-paper-plane"></i> 提交答卷</button>
+        </div>
+    </div>
+
+    <!-- ===== 结果页 ===== -->
+    <div id="resultPage" class="page">
+        <div class="result-summary">
+            <div class="score-circle"><span id="scoreNum">0</span><span class="total">/<span id="totalNum">0</span></span></div>
+            <div style="font-size:18px;font-weight:500;margin:6px 0;">得分</div>
+            <div class="result-stats">
+                <div class="stat correct"><div class="num" id="correctCount">0</div><div class="label"><i class="fas fa-check-circle"></i> 正确</div></div>
+                <div class="stat wrong"><div class="num" id="wrongCount">0</div><div class="label"><i class="fas fa-times-circle"></i> 错误</div></div>
+                <div class="stat"><div class="num" id="accuracy">0%</div><div class="label"><i class="fas fa-percent"></i> 正确率</div></div>
+            </div>
+        </div>
+        <div style="border-top:2px solid #e9edf2; padding-top:20px; margin-top:20px;">
+            <h3 style="margin-bottom:16px;"><i class="fas fa-list-ul"></i> 答题详情</h3>
+            <div id="detailItems"></div>
+        </div>
+        <div class="submit-area" style="justify-content:center;margin-top:20px;">
+            <button class="btn btn-primary" onclick="startExam()"><i class="fas fa-redo"></i> 重新考试</button>
+            <button class="btn btn-outline" onclick="location.reload()"><i class="fas fa-home"></i> 回到首页</button>
+        </div>
+    </div>
+
+    <!-- ===== 管理后台 ===== -->
+    <div id="adminPage" class="page">
+        <div class="admin-panel">
+            <h3><i class="fas fa-database"></i> 题库管理</h3>
+            <div class="admin-stats">
+                <span class="badge"><i class="fas fa-question-circle"></i> 题目总数：<strong id="adminTotalQ">0</strong></span>
+                <button class="btn btn-danger btn-sm" onclick="clearAllData()"><i class="fas fa-trash-alt"></i> 清空所有数据</button>
+            </div>
+
+            <div style="background:white; border-radius:16px; padding:20px; margin-bottom:24px; border:1px solid #e2e8f0;">
+                <h4 id="editorTitle"><i class="fas fa-plus-circle"></i> 添加新题目</h4>
+                <input type="hidden" id="editId" value="-1">
+                <div class="form-group"><label>题型</label>
+                    <select id="qType"><option value="single">单选题</option><option value="multi">多选题</option><option value="judge">判断题</option></select>
+                </div>
+                <div class="form-group"><label>题目内容</label><textarea id="qContent" rows="2" placeholder="请输入题目内容..."></textarea></div>
+                <div class="form-group"><label>选项</label>
+                    <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                        <div id="optionsEditorContainer"></div>
+                        <button class="btn btn-outline btn-sm" type="button" onclick="addOptionField()" style="align-self:flex-start;"><i class="fas fa-plus"></i> 增加选项</button>
+                    </div>
+                </div>
+                <div class="form-group"><label>正确答案</label>
+                    <input type="text" id="qAnswer" placeholder="例如: 0 或 0,2 (多选用逗号分隔)">
+                    <span style="font-size:12px;color:#94a3b8;">（选项从0开始编号，判断题填 0 或 1）</span>
+                </div>
+                <div style="display:flex; gap:12px; margin-top:12px; justify-content:flex-end;">
+                    <button class="btn btn-outline btn-sm" onclick="cancelEdit()">取消</button>
+                    <button class="btn btn-primary btn-sm" onclick="saveQuestion()"><i class="fas fa-save"></i> 保存题目</button>
+                </div>
+            </div>
+
+            <div style="background:white; border-radius:16px; border:1px solid #e2e8f0; overflow:hidden;">
+                <div id="adminQuestionList"></div>
+            </div>
+
+            <div style="margin-top:30px;">
+                <h4><i class="fas fa-clock"></i> 所有答题记录</h4>
+                <div id="allResults" style="background:white; border-radius:16px; border:1px solid #e2e8f0; padding:10px 16px; max-height:300px; overflow-y:auto; margin-top:10px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Font Awesome -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+
+<script>
+    // ============================================================
+    //  请修改下面的 API_BASE 为你实际的 Worker 地址
+    // ============================================================
+    const API_BASE = 'https://cs.jujinjin2023.workers.dev';
+
+    // ============================================================
+    //  全局状态
+    // ============================================================
+    let currentUser = null;
+    let currentQuestions = [];
+    let userAnswers = {};
+
+    // ============================================================
+    //  工具函数
+    // ============================================================
+    function $(id) { return document.getElementById(id); }
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+        $(id).classList.add('active');
+    }
+
+    function getOptionLabel(idx) {
+        return String.fromCharCode(65 + idx);
+    }
+
+    // ============================================================
+    //  登录 / 注册 / 退出
+    // ============================================================
+    function toggleRegister() {
+        $('registerForm').classList.toggle('hidden');
+    }
+
+    async function register() {
+        const username = $('regUsername').value.trim();
+        const password = $('regPassword').value.trim();
+        if (!username || !password) return alert('请填写完整');
+        try {
+            const res = await fetch(`${API_BASE}/api/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('注册成功，请登录');
+                $('regUsername').value = '';
+                $('regPassword').value = '';
+                toggleRegister();
+            } else {
+                alert(data.error || '注册失败');
+            }
+        } catch (e) {
+            alert('网络错误：' + e.message);
+        }
+    }
+
+    async function login() {
+        const username = $('loginUsername').value.trim();
+        const password = $('loginPassword').value.trim();
+        if (!username || !password) return alert('请输入用户名和密码');
+        try {
+            const res = await fetch(`${API_BASE}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+            if (data.success) {
+                currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                renderNav();
+                showPage('examPage');
+                startExam();
+            } else {
+                alert(data.error || '登录失败');
+            }
+        } catch (e) {
+            alert('网络错误：' + e.message);
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('user');
+        currentUser = null;
+        renderNav();
+        showPage('loginPage');
+        $('loginPassword').value = '';
+    }
+
+    function renderNav() {
+        const info = $('userInfo');
+        const logoutBtn = $('logoutBtn');
+        const adminBtn = $('adminBtn');
+        const startBtn = $('startExamBtn');
+        if (currentUser) {
+            info.textContent = `欢迎，${currentUser.username} (${currentUser.role})`;
+            info.classList.remove('hidden');
+            logoutBtn.classList.remove('hidden');
+            startBtn.classList.add('hidden');
+            if (currentUser.role === 'admin') {
+                adminBtn.classList.remove('hidden');
+            } else {
+                adminBtn.classList.add('hidden');
+            }
+        } else {
+            info.classList.add('hidden');
+            logoutBtn.classList.add('hidden');
+            adminBtn.classList.add('hidden');
+            startBtn.classList.remove('hidden');
+        }
+    }
+
+    // ============================================================
+    //  考试逻辑
+    // ============================================================
+    async function startExam() {
+        if (!currentUser) return alert('请先登录');
+        try {
+            const res = await fetch(`${API_BASE}/api/questions`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                currentQuestions = data;
+                renderQuestions(data);
+                userAnswers = {};
+                updateAnsweredCount();
+                showPage('examPage');
+            } else {
+                alert('获取题目失败');
+            }
+        } catch (e) {
+            alert('加载题目失败：' + e.message);
+        }
+    }
+
+    function renderQuestions(questions) {
+        const container = $('questionsContainer');
+        container.innerHTML = '';
+        $('totalQ').textContent = questions.length;
+        // 统计题型
+        const types = {};
+        questions.forEach(q => { types[q.type] = (types[q.type] || 0) + 1; });
+        $('typeStats').textContent =
+            Object.entries(types).map(([k, v]) => ({ single: '单选', multi: '多选', judge: '判断' } [k] + v)).join(' · ');
+
+        questions.forEach((q, idx) => {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            card.dataset.index = idx;
+            const typeMap = { single: '单选', multi: '多选', judge: '判断' };
+            const typeCls = { single: 'single', multi: 'multi', judge: 'judge' };
+            const header = document.createElement('div');
+            header.className = 'q-header';
+            header.innerHTML = `
+                <span class="q-number">${idx + 1}</span>
+                <span class="q-type ${typeCls[q.type]}">${typeMap[q.type]}</span>
+            `;
+            card.appendChild(header);
+
+            const content = document.createElement('div');
+            content.className = 'q-content';
+            content.textContent = q.content;
+            card.appendChild(content);
+
+            const optionsDiv = document.createElement('div');
+            optionsDiv.className = 'options';
+
+            q.options.forEach((opt, oi) => {
+                const optDiv = document.createElement('div');
+                optDiv.className = 'option';
+                const inputType = q.type === 'multi' ? 'checkbox' : 'radio';
+                const input = document.createElement('input');
+                input.type = inputType;
+                input.name = `q${idx}`;
+                input.value = oi;
+                input.addEventListener('change', () => {
+                    const selected = [];
+                    if (q.type === 'multi') {
+                        const checks = card.querySelectorAll('input[type="checkbox"]:checked');
+                        checks.forEach(cb => selected.push(cb.value));
+                    } else {
+                        const radio = card.querySelector('input[type="radio"]:checked');
+                        if (radio) selected.push(radio.value);
+                    }
+                    userAnswers[idx] = selected;
+                    updateAnsweredCount();
+                });
+                const label = document.createElement('label');
+                label.htmlFor = input.id || '';
+                label.innerHTML = `<span class="opt-label">${getOptionLabel(oi)}.</span> ${opt}`;
+                optDiv.appendChild(input);
+                optDiv.appendChild(label);
+                optionsDiv.appendChild(optDiv);
+            });
+            card.appendChild(optionsDiv);
+            container.appendChild(card);
+        });
+    }
+
+    function updateAnsweredCount() {
+        const count = Object.keys(userAnswers).filter(k => userAnswers[k] && userAnswers[k].length > 0).length;
+        $('answeredCount').textContent = count;
+    }
+
+    async function submitExam() {
+        if (!currentUser) return alert('请先登录');
+        const total = currentQuestions.length;
+        const answered = Object.keys(userAnswers).filter(k => userAnswers[k] && userAnswers[k].length > 0).length;
+        if (answered < total) {
+            if (!confirm(`还有 ${total - answered} 题未作答，确定提交吗？`)) return;
+        } else {
+            if (!confirm('确定提交答卷吗？')) return;
+        }
+        const answers = [];
+        for (const idx in userAnswers) {
+            const q = currentQuestions[idx];
+            if (!q) continue;
+            answers.push({
+                questionId: q.id,
+                selectedIndexes: userAnswers[idx] || []
+            });
+        }
+        try {
+            const res = await fetch(`${API_BASE}/api/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': String(currentUser.id)
+                },
+                body: JSON.stringify({ answers })
+            });
+            const data = await res.json();
+            if (data.details) {
+                showResult(data);
+            } else {
+                alert('提交失败：' + (data.error || '未知错误'));
+            }
+        } catch (e) {
+            alert('提交出错：' + e.message);
+        }
+    }
+
+    function showResult(data) {
+        showPage('resultPage');
+        $('scoreNum').textContent = data.score;
+        $('totalNum').textContent = data.total;
+        $('correctCount').textContent = data.correct;
+        $('wrongCount').textContent = data.wrong;
+        $('accuracy').textContent = data.accuracy + '%';
+
+        const container = $('detailItems');
+        container.innerHTML = '';
+        data.details.forEach((d, i) => {
+            const div = document.createElement('div');
+            div.className = 'detail-item';
+            const icon = document.createElement('div');
+            icon.className = `d-icon ${d.isCorrect ? 'correct' : 'wrong'}`;
+            icon.innerHTML = d.isCorrect ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>';
+            div.appendChild(icon);
+            const body = document.createElement('div');
+            body.className = 'd-body';
+            const qText = document.createElement('div');
+            qText.className = 'd-q';
+            qText.textContent = `${i+1}. ${d.questionContent}`;
+            body.appendChild(qText);
+            const meta = document.createElement('div');
+            meta.className = 'd-meta';
+            const tag = document.createElement('span');
+            tag.className = `tag ${d.isCorrect ? 'tag-correct' : 'tag-wrong'}`;
+            tag.textContent = d.isCorrect ? '✓ 正确' : '✗ 错误';
+            meta.appendChild(tag);
+            const userSpan = document.createElement('span');
+            userSpan.innerHTML = `<strong>你的答案：</strong>${d.userAnswer || '未作答'}`;
+            meta.appendChild(userSpan);
+            const correctSpan = document.createElement('span');
+            correctSpan.innerHTML = `<strong>正确答案：</strong>${d.correctAnswer}`;
+            meta.appendChild(correctSpan);
+            body.appendChild(meta);
+            div.appendChild(body);
+            container.appendChild(div);
+        });
+    }
+
+    function resetExam() {
+        if (!confirm('重新开始将丢失当前进度，确定吗？')) return;
+        startExam();
+    }
+
+    // ============================================================
+    //  管理后台（仅管理员）
+    // ============================================================
+    async function showAdmin() {
+        if (!currentUser || currentUser.role !== 'admin') {
+            alert('无权限');
+            return;
+        }
+        showPage('adminPage');
+        await loadQuestionsAdmin();
+        await loadAllResults();
+    }
+
+    async function loadQuestionsAdmin() {
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/questions`, {
+                headers: { 'Authorization': 'admin-secret' }
+            });
+            const data = await res.json();
+            $('adminTotalQ').textContent = data.length;
+            const list = $('adminQuestionList');
+            list.innerHTML = '';
+            if (data.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无题目</div>';
+                return;
+            }
+            data.forEach((q, idx) => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `
+                    <span class="q-text"><strong>${idx+1}.</strong> ${q.content} (${q.type})</span>
+                    <span class="q-meta">
+                        <button class="btn btn-outline btn-sm" onclick="editQuestion(${q.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteQuestion(${q.id})">删除</button>
+                    </span>
+                `;
+                list.appendChild(div);
+            });
+        } catch (e) {
+            alert('加载题目失败：' + e.message);
+        }
+    }
+
+    async function loadAllResults() {
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/results`, {
+                headers: { 'Authorization': 'admin-secret' }
+            });
+            const data = await res.json();
+            const container = $('allResults');
+            container.innerHTML = '';
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无答题记录</div>';
+                return;
+            }
+            data.forEach(r => {
+                const div = document.createElement('div');
+                div.style.padding = '6px 0';
+                div.style.borderBottom = '1px solid #f1f5f9';
+                div.textContent = `${r.username} - ${r.question_content} - 作答:${r.user_answer || '未作答'} - 正确:${r.is_correct ? '是' : '否'}`;
+                container.appendChild(div);
+            });
+        } catch (e) {
+            alert('加载记录失败：' + e.message);
+        }
+    }
+
+    // ---------- 编辑器 ----------
+    function addOptionField() {
+        const container = $('optionsEditorContainer');
+        const count = container.children.length;
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.gap = '8px';
+        div.style.alignItems = 'center';
+        div.innerHTML = `
+            <span class="opt-label-static">${getOptionLabel(count)}</span>
+            <input type="text" placeholder="选项内容..." style="flex:1; padding:6px 12px; border:1.5px solid #e2e8f0; border-radius:8px;" />
+            <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        `;
+        container.appendChild(div);
+    }
+
+    function loadOptionsToEditor(options) {
+        const container = $('optionsEditorContainer');
+        container.innerHTML = '';
+        options.forEach((opt, idx) => {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '8px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <span class="opt-label-static">${getOptionLabel(idx)}</span>
+                <input type="text" value="${opt}" placeholder="选项内容..." style="flex:1; padding:6px 12px; border:1.5px solid #e2e8f0; border-radius:8px;" />
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function getOptionsFromEditor() {
+        const inputs = $('optionsEditorContainer').querySelectorAll('input[type="text"]');
+        return Array.from(inputs).map(inp => inp.value.trim()).filter(v => v !== '');
+    }
+
+    function cancelEdit() {
+        $('editId').value = -1;
+        $('editorTitle').innerHTML = '<i class="fas fa-plus-circle"></i> 添加新题目';
+        $('qType').value = 'single';
+        $('qContent').value = '';
+        $('qAnswer').value = '';
+        const container = $('optionsEditorContainer');
+        container.innerHTML = '';
+        for (let i = 0; i < 4; i++) {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '8px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <span class="opt-label-static">${getOptionLabel(i)}</span>
+                <input type="text" placeholder="选项内容..." style="flex:1; padding:6px 12px; border:1.5px solid #e2e8f0; border-radius:8px;" />
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(div);
+        }
+    }
+
+    function editQuestion(id) {
+        // 简化：提示手动填写，也可以从列表加载，但为了代码简洁，我们直接引导用户
+        alert('请在下方表单中修改内容后保存，当前编辑 ID 已填入');
+        $('editId').value = id;
+        $('editorTitle').innerHTML = '<i class="fas fa-edit"></i> 编辑题目';
+        // 这里可以进一步通过 API 获取题目详情并填充，但为了简单，我们让用户手动填写
+    }
+
+    async function saveQuestion() {
+        const id = parseInt($('editId').value);
+        const type = $('qType').value;
+        const content = $('qContent').value.trim();
+        const options = getOptionsFromEditor();
+        const answer = $('qAnswer').value.trim();
+
+        if (!content) { alert('请输入题目内容'); return; }
+        if (options.length < 2) { alert('至少需要2个选项'); return; }
+        if (!answer) { alert('请输入正确答案索引'); return; }
+
+        const payload = { type, content, options, answer };
+        let url = `${API_BASE}/api/admin/questions`;
+        let method = 'POST';
+        if (id !== -1) {
+            url = `${API_BASE}/api/admin/questions/${id}`;
+            method = 'PUT';
+        }
+
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'admin-secret'
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('保存成功');
+                cancelEdit();
+                loadQuestionsAdmin();
+            } else {
+                alert('保存失败：' + (data.error || '未知错误'));
+            }
+        } catch (e) {
+            alert('请求失败：' + e.message);
+        }
+    }
+
+    async function deleteQuestion(id) {
+        if (!confirm('确定要删除这道题吗？')) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/admin/questions/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'admin-secret' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('删除成功');
+                loadQuestionsAdmin();
+            } else {
+                alert('删除失败');
+            }
+        } catch (e) {
+            alert('请求失败：' + e.message);
+        }
+    }
+
+    function clearAllData() {
+        if (!confirm('确定要清空所有题目吗？此操作不可撤销！')) return;
+        // 没有批量删除接口，此处提示手动操作
+        alert('请逐个删除题目，或直接在 D1 中执行 DELETE FROM questions;');
+    }
+
+    // ============================================================
+    //  初始化
+    // ============================================================
+    window.onload = function() {
+        const saved = localStorage.getItem('user');
+        if (saved) {
+            try {
+                currentUser = JSON.parse(saved);
+                renderNav();
+                showPage('examPage');
+                startExam();
+                return;
+            } catch (e) {}
+        }
+        showPage('loginPage');
+        renderNav();
+        cancelEdit(); // 初始化编辑器
+    };
+
+    // 暴露全局函数供按钮调用
+    window.startExam = startExam;
+    window.submitExam = submitExam;
+    window.resetExam = resetExam;
+    window.showAdmin = showAdmin;
+    window.logout = logout;
+    window.login = login;
+    window.register = register;
+    window.toggleRegister = toggleRegister;
+    window.addOptionField = addOptionField;
+    window.cancelEdit = cancelEdit;
+    window.saveQuestion = saveQuestion;
+    window.editQuestion = editQuestion;
+    window.deleteQuestion = deleteQuestion;
+    window.clearAllData = clearAllData;
+    window.loadQuestionsAdmin = loadQuestionsAdmin;
+    window.loadAllResults = loadAllResults;
+</script>
+</body>
+</html>
