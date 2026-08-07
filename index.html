@@ -429,12 +429,19 @@
         let duration = 0;
         if (examStartTime) duration = Math.floor((Date.now() - examStartTime) / 1000);
         if (timerInterval) clearInterval(timerInterval);
-        const answers = [];
-        for (const idx in userAnswers) {
-            const q = currentQuestions[idx];
-            if (!q) continue;
-            answers.push({ questionId: q.id, selectedIndexes: userAnswers[idx] || [] });
-        }
+     const answers = [];
+for (const idx in userAnswers) {
+    const q = currentQuestions[idx];
+    if (!q) continue;
+    const selectedIndices = userAnswers[idx] || [];
+    // 提交索引和当前选项列表（用于后端映射）
+    answers.push({
+        questionId: q.id,
+        selectedIndexes: selectedIndices,
+        currentOptions: q.options   // 打乱后的顺序
+    });
+    answers.push({ questionId: q.id, selectedTexts });
+}
         try {
             const res = await fetch(`${API_BASE}/api/submit`, {
                 method: 'POST',
