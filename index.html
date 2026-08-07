@@ -418,47 +418,50 @@
     }
 
     async function submitExam() {
-        if (!currentUser) return alert('请先登录');
-        const total = currentQuestions.length;
-        const answered = Object.keys(userAnswers).filter(k => userAnswers[k] && userAnswers[k].length > 0).length;
-        if (answered < total) {
-            if (!confirm(`还有 ${total - answered} 题未作答，确定提交吗？`)) return;
-        } else {
-            if (!confirm('确定提交答卷吗？')) return;
-        }
-        let duration = 0;
-        if (examStartTime) duration = Math.floor((Date.now() - examStartTime) / 1000);
-        if (timerInterval) clearInterval(timerInterval);
-     const answers = [];
-for (const idx in userAnswers) {
-    const q = currentQuestions[idx];
-    if (!q) continue;
-    const selectedIndices = userAnswers[idx] || [];
-    // 提交索引和当前选项列表（用于后端映射）
-    answers.push({
-        questionId: q.id,
-        selectedIndexes: selectedIndices,
-        currentOptions: q.options   // 打乱后的顺序
-    });
-    answers.push({ questionId: q.id, selectedTexts });
-}
-        try {
-            const res = await fetch(`${API_BASE}/api/submit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': String(currentUser.id)
-                },
-                body: JSON.stringify({ answers, duration })
-            });
-            const data = await res.json();
-            if (data.details) {
-                showResult(data);
-            } else {
-                alert('提交失败：' + (data.error || '未知错误'));
-            }
-        } catch (e) { alert('提交出错：' + e.message); }
+    if (!currentUser) return alert('请先登录');
+    const total = currentQuestions.length;
+    const answered = Object.keys(userAnswers).filter(k => userAnswers[k] && userAnswers[k].length > 0).length;
+    if (answered < total) {
+        if (!confirm(`还有 ${total - answered} 题未作答，确定提交吗？`)) return;
+    } else {
+        if (!confirm('确定提交答卷吗？')) return;
     }
+    let duration = 0;
+    if (examStartTime) duration = Math.floor((Date.now() - examStartTime) / 1000);
+    if (timerInterval) clearInterval(timerInterval);
+    
+    // 构建提交数据：直接提交选项文本
+    const answers = [];
+    for (const idx in userAnswers) {
+        const q = currentQuestions[idx];
+        if (!q) continue;
+        const selectedIndices = userAnswers[idx] || [];
+        // 将索引转换为选项文本
+        const selectedTexts = selectedIndices.map(i => q.options[parseInt(i)]);
+        answers.push({
+            questionId: q.id,
+            selectedTexts: selectedTexts   // 直接提交文本
+        });
+    }
+    try {
+        const res = await fetch(`${API_BASE}/api/submit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': String(currentUser.id)
+            },
+            body: JSON.stringify({ answers, duration })
+        });
+        const data = await res.json();
+        if (data.details) {
+            showResult(data);
+        } else {
+            alert('提交失败：' + (data.error || '未知错误'));
+        }
+    } catch (e) {
+        alert('提交出错：' + e.message);
+    }
+}
 
     function showResult(data) {
         showPage('resultPage');
