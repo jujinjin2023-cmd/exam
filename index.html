@@ -92,7 +92,6 @@
 <body>
 
 <div class="container" id="app">
-    <!-- 导航栏 -->
     <div class="nav-bar">
         <h1><i class="fas fa-graduation-cap"></i> 考试平台</h1>
         <div class="nav-actions">
@@ -103,24 +102,24 @@
         </div>
     </div>
 
-    <!-- ===== 登录/注册页 ===== -->
+    <!-- 登录/注册 -->
     <div id="loginPage" class="page active">
-        <h2 style="margin-bottom:20px;">登录</h2>
-        <div class="form-group"><label>用户名</label><input type="text" id="loginUsername" placeholder="请输入用户名" /></div>
-        <div class="form-group"><label>密码</label><input type="password" id="loginPassword" placeholder="请输入密码" /></div>
+        <h2>登录</h2>
+        <div class="form-group"><label>用户名</label><input type="text" id="loginUsername" /></div>
+        <div class="form-group"><label>密码</label><input type="password" id="loginPassword" /></div>
         <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
             <button class="btn btn-primary" onclick="login()">登录</button>
             <span>还没有账号？ <a href="#" onclick="toggleRegister()">立即注册</a></span>
         </div>
         <div id="registerForm" class="hidden" style="margin-top:20px; border-top:1px solid #e2e8f0; padding-top:20px;">
-            <h3>注册新账号</h3>
-            <div class="form-group"><label>用户名</label><input type="text" id="regUsername" placeholder="请设置用户名" /></div>
-            <div class="form-group"><label>密码</label><input type="password" id="regPassword" placeholder="请设置密码" /></div>
+            <h3>注册</h3>
+            <div class="form-group"><label>用户名</label><input type="text" id="regUsername" /></div>
+            <div class="form-group"><label>密码</label><input type="password" id="regPassword" /></div>
             <button class="btn btn-success" onclick="register()">注册</button>
         </div>
     </div>
 
-    <!-- ===== 考试页 ===== -->
+    <!-- 考试页 -->
     <div id="examPage" class="page">
         <div class="info-bar">
             <span><i class="fas fa-list"></i> 共 <span class="num" id="totalQ">0</span> 题</span>
@@ -135,7 +134,7 @@
         </div>
     </div>
 
-    <!-- ===== 结果页 ===== -->
+    <!-- 结果页 -->
     <div id="resultPage" class="page">
         <div class="result-summary">
             <div class="score-circle"><span id="scoreNum">0</span><span class="total">/<span id="totalNum">0</span></span></div>
@@ -148,7 +147,7 @@
             </div>
         </div>
         <div style="border-top:2px solid #e9edf2; padding-top:20px; margin-top:20px;">
-            <h3 style="margin-bottom:16px;"><i class="fas fa-list-ul"></i> 答题详情</h3>
+            <h3><i class="fas fa-list-ul"></i> 答题详情</h3>
             <div id="detailItems"></div>
         </div>
         <div class="submit-area" style="justify-content:center;margin-top:20px;">
@@ -157,7 +156,7 @@
         </div>
     </div>
 
-    <!-- ===== 管理后台 ===== -->
+    <!-- 管理后台 -->
     <div id="adminPage" class="page">
         <div class="admin-panel">
             <h3><i class="fas fa-database"></i> 题库管理</h3>
@@ -166,14 +165,13 @@
                 <button class="btn btn-primary btn-sm" onclick="exportCSV()"><i class="fas fa-file-export"></i> 导出 CSV</button>
                 <button class="btn btn-danger btn-sm" onclick="clearAllData()"><i class="fas fa-trash-alt"></i> 清空所有数据</button>
             </div>
-
             <div style="background:white; border-radius:16px; padding:20px; margin-bottom:24px; border:1px solid #e2e8f0;">
                 <h4 id="editorTitle"><i class="fas fa-plus-circle"></i> 添加新题目</h4>
                 <input type="hidden" id="editId" value="-1">
                 <div class="form-group"><label>题型</label>
                     <select id="qType"><option value="single">单选题</option><option value="multi">多选题</option><option value="judge">判断题</option></select>
                 </div>
-                <div class="form-group"><label>题目内容</label><textarea id="qContent" rows="2" placeholder="请输入题目内容..."></textarea></div>
+                <div class="form-group"><label>题目内容</label><textarea id="qContent" rows="2"></textarea></div>
                 <div class="form-group"><label>选项</label>
                     <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
                         <div id="optionsEditorContainer"></div>
@@ -181,25 +179,22 @@
                     </div>
                 </div>
                 <div class="form-group"><label>正确答案</label>
-                    <input type="text" id="qAnswer" placeholder="例如: 0 或 0,2 (多选用逗号分隔)">
-                    <span style="font-size:12px;color:#94a3b8;">（选项从0开始编号，判断题填 0 或 1）</span>
+                    <input type="text" id="qAnswer" placeholder="例如: 0 或 0,2">
+                    <span style="font-size:12px;color:#94a3b8;">（选项从0开始编号）</span>
                 </div>
                 <div style="display:flex; gap:12px; margin-top:12px; justify-content:flex-end;">
                     <button class="btn btn-outline btn-sm" onclick="cancelEdit()">取消</button>
                     <button class="btn btn-primary btn-sm" onclick="saveQuestion()"><i class="fas fa-save"></i> 保存题目</button>
                 </div>
             </div>
-
             <div style="background:white; border-radius:16px; border:1px solid #e2e8f0; overflow:hidden;">
                 <div id="adminQuestionList"></div>
             </div>
-
             <div style="margin-top:30px;">
                 <h4><i class="fas fa-clock"></i> 所有答题记录</h4>
                 <div id="allResults" style="background:white; border-radius:16px; border:1px solid #e2e8f0; padding:10px 16px; max-height:300px; overflow-y:auto; margin-top:10px;"></div>
             </div>
-
-            <!-- ===== 用户管理（仅 superadmin 可见） ===== -->
+            <!-- 用户管理（仅 superadmin） -->
             <div id="userManagement" class="hidden" style="margin-top:30px; border-top:2px solid #e2e8f0; padding-top:20px;">
                 <h4><i class="fas fa-users-cog"></i> 用户管理（超级管理员）</h4>
                 <div id="userList" style="background:white; border-radius:16px; border:1px solid #e2e8f0; padding:10px 16px; max-height:300px; overflow-y:auto; margin-top:10px;"></div>
@@ -208,14 +203,12 @@
     </div>
 </div>
 
-<!-- Font Awesome -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
-
 <script>
     // ============================================================
-    //  请修改下面的 API_BASE 为你实际的 Worker 地址
+    //  🔑 API_BASE 已设置为你的 Worker 地址
     // ============================================================
-    const API_BASE = 'https://cs.jujinjin2023.workers.dev';
+    const API_BASE = 'https://exam.jujinjin2023.workers.dev';
 
     // ============================================================
     //  全局状态
@@ -227,31 +220,21 @@
     let timerInterval = null;
     let seconds = 0;
 
-    // ============================================================
-    //  工具函数
-    // ============================================================
     function $(id) { return document.getElementById(id); }
     function showPage(id) {
         document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
         $(id).classList.add('active');
     }
 
-    function getOptionLabel(idx) {
-        return String.fromCharCode(65 + idx);
-    }
-
+    function getOptionLabel(idx) { return String.fromCharCode(65 + idx); }
     function formatTime(sec) {
         const m = String(Math.floor(sec / 60)).padStart(2, '0');
         const s = String(sec % 60).padStart(2, '0');
         return `${m}:${s}`;
     }
 
-    // ============================================================
-    //  登录 / 注册 / 退出
-    // ============================================================
-    function toggleRegister() {
-        $('registerForm').classList.toggle('hidden');
-    }
+    // ---------- 注册 / 登录 / 退出 ----------
+    function toggleRegister() { $('registerForm').classList.toggle('hidden'); }
 
     async function register() {
         const username = $('regUsername').value.trim();
@@ -272,9 +255,7 @@
             } else {
                 alert(data.error || '注册失败');
             }
-        } catch (e) {
-            alert('网络错误：' + e.message);
-        }
+        } catch (e) { alert('网络错误：' + e.message); }
     }
 
     async function login() {
@@ -297,15 +278,13 @@
             } else {
                 alert(data.error || '登录失败');
             }
-        } catch (e) {
-            alert('网络错误：' + e.message);
-        }
+        } catch (e) { alert('网络错误：' + e.message); }
     }
 
     function logout() {
         localStorage.removeItem('user');
         currentUser = null;
-        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        if (timerInterval) clearInterval(timerInterval);
         renderNav();
         showPage('loginPage');
         $('loginPassword').value = '';
@@ -334,9 +313,7 @@
         }
     }
 
-    // ============================================================
-    //  考试逻辑
-    // ============================================================
+    // ---------- 考试逻辑 ----------
     function startTimer() {
         if (timerInterval) clearInterval(timerInterval);
         seconds = 0;
@@ -348,7 +325,7 @@
 
     async function startExam() {
         if (!currentUser) return alert('请先登录');
-        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        if (timerInterval) clearInterval(timerInterval);
         try {
             const res = await fetch(`${API_BASE}/api/questions`);
             const data = await res.json();
@@ -363,9 +340,7 @@
             } else {
                 alert('获取题目失败');
             }
-        } catch (e) {
-            alert('加载题目失败：' + e.message);
-        }
+        } catch (e) { alert('加载题目失败：' + e.message); }
     }
 
     function renderQuestions(questions) {
@@ -390,15 +365,12 @@
                 <span class="q-type ${typeCls[q.type]}">${typeMap[q.type]}</span>
             `;
             card.appendChild(header);
-
             const content = document.createElement('div');
             content.className = 'q-content';
             content.textContent = q.content;
             card.appendChild(content);
-
             const optionsDiv = document.createElement('div');
             optionsDiv.className = 'options';
-
             q.options.forEach((opt, oi) => {
                 const optDiv = document.createElement('div');
                 optDiv.className = 'option';
@@ -420,7 +392,6 @@
                     updateAnsweredCount();
                 });
                 const label = document.createElement('label');
-                label.htmlFor = input.id || '';
                 label.innerHTML = `<span class="opt-label">${getOptionLabel(oi)}.</span> ${opt}`;
                 optDiv.appendChild(input);
                 optDiv.appendChild(label);
@@ -445,22 +416,14 @@
         } else {
             if (!confirm('确定提交答卷吗？')) return;
         }
-
-        // 计算总用时（秒）
         let duration = 0;
-        if (examStartTime) {
-            duration = Math.floor((Date.now() - examStartTime) / 1000);
-        }
-        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-
+        if (examStartTime) duration = Math.floor((Date.now() - examStartTime) / 1000);
+        if (timerInterval) clearInterval(timerInterval);
         const answers = [];
         for (const idx in userAnswers) {
             const q = currentQuestions[idx];
             if (!q) continue;
-            answers.push({
-                questionId: q.id,
-                selectedIndexes: userAnswers[idx] || []
-            });
+            answers.push({ questionId: q.id, selectedIndexes: userAnswers[idx] || [] });
         }
         try {
             const res = await fetch(`${API_BASE}/api/submit`, {
@@ -477,9 +440,7 @@
             } else {
                 alert('提交失败：' + (data.error || '未知错误'));
             }
-        } catch (e) {
-            alert('提交出错：' + e.message);
-        }
+        } catch (e) { alert('提交出错：' + e.message); }
     }
 
     function showResult(data) {
@@ -489,12 +450,7 @@
         $('correctCount').textContent = data.correct;
         $('wrongCount').textContent = data.wrong;
         $('accuracy').textContent = data.accuracy + '%';
-        // 显示用时
-        if (data.duration !== undefined) {
-            $('durationDisplay').textContent = data.duration + 's';
-        } else {
-            $('durationDisplay').textContent = '--';
-        }
+        $('durationDisplay').textContent = data.duration ? data.duration + 's' : '--';
 
         const container = $('detailItems');
         container.innerHTML = '';
@@ -531,13 +487,11 @@
 
     function resetExam() {
         if (!confirm('重新开始将丢失当前进度，确定吗？')) return;
-        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        if (timerInterval) clearInterval(timerInterval);
         startExam();
     }
 
-    // ============================================================
-    //  管理后台（仅 admin 或 superadmin）
-    // ============================================================
+    // ---------- 管理后台 ----------
     async function showAdmin() {
         if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) {
             alert('无权限');
@@ -554,7 +508,6 @@
         }
     }
 
-    // ========== 题库管理 ==========
     async function loadQuestionsAdmin() {
         try {
             const res = await fetch(`${API_BASE}/api/admin/questions`, {
@@ -580,9 +533,7 @@
                 `;
                 list.appendChild(div);
             });
-        } catch (e) {
-            alert('加载题目失败：' + e.message);
-        }
+        } catch (e) { alert('加载题目失败：' + e.message); }
     }
 
     async function loadAllResults() {
@@ -601,16 +552,13 @@
                 const div = document.createElement('div');
                 div.style.padding = '6px 0';
                 div.style.borderBottom = '1px solid #f1f5f9';
-                const durationText = r.duration_seconds ? ` 用时: ${r.duration_seconds}s` : '';
-                div.textContent = `${r.username} - ${r.question_content} - 作答:${r.user_answer || '未作答'} - 正确:${r.is_correct ? '是' : '否'}${durationText}`;
+                div.textContent = `${r.username} - ${r.question_content} - 作答:${r.user_answer || '未作答'} - 正确:${r.is_correct ? '是' : '否'} ${r.duration_seconds ? '用时'+r.duration_seconds+'s' : ''}`;
                 container.appendChild(div);
             });
-        } catch (e) {
-            alert('加载记录失败：' + e.message);
-        }
+        } catch (e) { alert('加载记录失败：' + e.message); }
     }
 
-    // ========== 导出 CSV ==========
+    // 导出 CSV
     async function exportCSV() {
         if (!currentUser) return alert('请先登录');
         try {
@@ -628,12 +576,10 @@
             link.download = '考试记录.csv';
             link.click();
             URL.revokeObjectURL(link.href);
-        } catch (e) {
-            alert('导出出错：' + e.message);
-        }
+        } catch (e) { alert('导出出错：' + e.message); }
     }
 
-    // ========== 用户管理（仅 superadmin） ==========
+    // 用户管理（superadmin）
     async function loadUserList() {
         try {
             const res = await fetch(`${API_BASE}/api/admin/users`, {
@@ -690,12 +636,10 @@
                 div.appendChild(roleSelect);
                 container.appendChild(div);
             });
-        } catch (e) {
-            alert('加载用户列表失败：' + e.message);
-        }
+        } catch (e) { alert('加载用户列表失败：' + e.message); }
     }
 
-    // ========== 编辑器功能 ==========
+    // ---------- 编辑器 ----------
     function addOptionField() {
         const container = $('optionsEditorContainer');
         const count = container.children.length;
@@ -709,23 +653,6 @@
             <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
         `;
         container.appendChild(div);
-    }
-
-    function loadOptionsToEditor(options) {
-        const container = $('optionsEditorContainer');
-        container.innerHTML = '';
-        options.forEach((opt, idx) => {
-            const div = document.createElement('div');
-            div.style.display = 'flex';
-            div.style.gap = '8px';
-            div.style.alignItems = 'center';
-            div.innerHTML = `
-                <span class="opt-label-static">${getOptionLabel(idx)}</span>
-                <input type="text" value="${opt}" placeholder="选项内容..." style="flex:1; padding:6px 12px; border:1.5px solid #e2e8f0; border-radius:8px;" />
-                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-            `;
-            container.appendChild(div);
-        });
     }
 
     function getOptionsFromEditor() {
@@ -797,9 +724,7 @@
             } else {
                 alert('保存失败：' + (data.error || '未知错误'));
             }
-        } catch (e) {
-            alert('请求失败：' + e.message);
-        }
+        } catch (e) { alert('请求失败：' + e.message); }
     }
 
     async function deleteQuestion(id) {
@@ -816,9 +741,7 @@
             } else {
                 alert('删除失败');
             }
-        } catch (e) {
-            alert('请求失败：' + e.message);
-        }
+        } catch (e) { alert('请求失败：' + e.message); }
     }
 
     function clearAllData() {
@@ -826,9 +749,7 @@
         alert('请逐个删除题目，或直接在 D1 中执行 DELETE FROM questions;');
     }
 
-    // ============================================================
-    //  初始化
-    // ============================================================
+    // ---------- 初始化 ----------
     window.onload = function() {
         const saved = localStorage.getItem('user');
         if (saved) {
@@ -845,6 +766,7 @@
         cancelEdit();
     };
 
+    // 暴露全局函数供按钮调用
     window.startExam = startExam;
     window.submitExam = submitExam;
     window.resetExam = resetExam;
