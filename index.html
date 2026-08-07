@@ -548,21 +548,29 @@
     }
 
     // ---- 编辑题目（修复版） ----
-    function editQuestion(id) {
-        const q = adminQuestions.find(item => item.id === id);
-        if (!q) {
-            alert('题目不存在');
-            return;
-        }
-        $('editId').value = q.id;
-        $('qType').value = q.type;
-        $('qContent').value = q.content;
-        $('qAnswer').value = q.answer;
-        loadOptionsToEditor(q.options);
-        $('editorTitle').innerHTML = '<i class="fas fa-edit"></i> 编辑题目';
-        // 滚动到编辑器
-        document.querySelector('.admin-panel').scrollIntoView({ behavior: 'smooth' });
+  function editQuestion(id) {
+    const q = adminQuestions.find(item => item.id === id);
+    if (!q) {
+        alert('题目不存在');
+        return;
     }
+    // 解析选项（如果 options 是 JSON 字符串，转为数组）
+    let options = q.options;
+    if (typeof options === 'string') {
+        try {
+            options = JSON.parse(options);
+        } catch (e) {
+            options = [];
+        }
+    }
+    document.getElementById('editId').value = q.id;
+    document.getElementById('qType').value = q.type;
+    document.getElementById('qContent').value = q.content;
+    document.getElementById('qAnswer').value = q.answer;
+    loadOptionsToEditor(options);   // 传入解析后的数组
+    document.getElementById('editorTitle').innerHTML = '<i class="fas fa-edit"></i> 编辑题目';
+    document.querySelector('.admin-panel').scrollIntoView({ behavior: 'smooth' });
+}
 
     async function loadAllResults() {
         try {
