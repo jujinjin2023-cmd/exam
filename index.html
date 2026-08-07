@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>在线考试平台</title>
+    <!-- 引入 Font Awesome 和 SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* 样式与之前保持一致，此处省略，实际使用时复制之前完整的样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
         .container { max-width: 1000px; width: 100%; background: white; border-radius: 32px; padding: 28px 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
@@ -74,7 +78,7 @@
 
         .admin-panel { background: #f8fafc; border-radius: 20px; padding: 24px; margin-top: 10px; }
         .admin-panel h3 { margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
-        .admin-stats { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+        .admin-stats { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
         .admin-stats .badge { background: white; padding: 6px 18px; border-radius: 60px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
         .question-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #e2e8f0; gap: 12px; flex-wrap: wrap; }
         .question-item .q-text { flex: 1; min-width: 150px; }
@@ -87,6 +91,8 @@
         .empty-state { padding: 30px; text-align: center; color: #94a3b8; }
 
         @media (max-width: 640px) { .container { padding: 16px; } .form-group { flex-direction: column; align-items: stretch; } .form-group label { width: auto; } }
+        /* 文件输入隐藏 */
+        #excelFileInput { display: none; }
     </style>
 </head>
 <body>
@@ -163,6 +169,10 @@
             <div class="admin-stats">
                 <span class="badge"><i class="fas fa-question-circle"></i> 题目总数：<strong id="adminTotalQ">0</strong></span>
                 <button class="btn btn-primary btn-sm" onclick="exportCSV()"><i class="fas fa-file-export"></i> 导出 CSV</button>
+                <button class="btn btn-success btn-sm" onclick="document.getElementById('excelFileInput').click()">
+                    <i class="fas fa-file-upload"></i> 导入 Excel
+                </button>
+                <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" onchange="importExcel(event)" />
                 <button class="btn btn-danger btn-sm" onclick="clearAllData()"><i class="fas fa-trash-alt"></i> 清空所有数据</button>
             </div>
             <div style="background:white; border-radius:16px; padding:20px; margin-bottom:24px; border:1px solid #e2e8f0;">
@@ -203,7 +213,6 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
 <script>
     // ============================================================
     //  🔑 API_BASE 已设置为你的 Worker 地址
@@ -219,6 +228,7 @@
     let examStartTime = null;
     let timerInterval = null;
     let seconds = 0;
+    let adminQuestions = [];   // 管理后台的题目列表（用于编辑）
 
     function $(id) { return document.getElementById(id); }
     function showPage(id) {
@@ -514,6 +524,7 @@
                 headers: { 'Authorization': String(currentUser.id) }
             });
             const data = await res.json();
+            adminQuestions = data;   // 保存到全局变量，供编辑使用
             $('adminTotalQ').textContent = data.length;
             const list = $('adminQuestionList');
             list.innerHTML = '';
@@ -534,6 +545,23 @@
                 list.appendChild(div);
             });
         } catch (e) { alert('加载题目失败：' + e.message); }
+    }
+
+    // ---- 编辑题目（修复版） ----
+    function editQuestion(id) {
+        const q = adminQuestions.find(item => item.id === id);
+        if (!q) {
+            alert('题目不存在');
+            return;
+        }
+        $('editId').value = q.id;
+        $('qType').value = q.type;
+        $('qContent').value = q.content;
+        $('qAnswer').value = q.answer;
+        loadOptionsToEditor(q.options);
+        $('editorTitle').innerHTML = '<i class="fas fa-edit"></i> 编辑题目';
+        // 滚动到编辑器
+        document.querySelector('.admin-panel').scrollIntoView({ behavior: 'smooth' });
     }
 
     async function loadAllResults() {
@@ -558,7 +586,7 @@
         } catch (e) { alert('加载记录失败：' + e.message); }
     }
 
-    // 导出 CSV
+    // ---------- 导出 CSV ----------
     async function exportCSV() {
         if (!currentUser) return alert('请先登录');
         try {
@@ -579,7 +607,74 @@
         } catch (e) { alert('导出出错：' + e.message); }
     }
 
-    // 用户管理（superadmin）
+    // ---------- Excel 导入 ----------
+    async function importExcel(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                // 跳过表头（第一行）
+                const questions = [];
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i];
+                    if (!row || row.length < 3) continue;
+                    const type = (row[0] || '').trim();
+                    const content = (row[1] || '').trim();
+                    const options = [row[2] || '', row[3] || '', row[4] || '', row[5] || '']
+                        .map(s => s.trim()).filter(s => s !== '');
+                    const answerRaw = (row[6] || '').trim().toUpperCase();
+                    if (!type || !content || options.length < 2 || !answerRaw) continue;
+                    // 将字母答案转换为索引（如 A -> 0, AB -> 0,1）
+                    let answer = '';
+                    if (type === 'judge') {
+                        if (answerRaw === 'A') answer = '0';
+                        else if (answerRaw === 'B') answer = '1';
+                        else continue;
+                    } else {
+                        const indices = answerRaw.split('').map(ch => {
+                            const idx = ch.charCodeAt(0) - 65;
+                            return idx >= 0 && idx < options.length ? idx : -1;
+                        }).filter(idx => idx >= 0);
+                        if (indices.length === 0) continue;
+                        answer = indices.join(',');
+                    }
+                    questions.push({ type, content, options, answer });
+                }
+                if (questions.length === 0) {
+                    alert('没有解析到有效题目，请检查格式。');
+                    return;
+                }
+                if (!confirm(`将导入 ${questions.length} 道题，确认吗？`)) return;
+                // 调用批量导入接口
+                const res = await fetch(`${API_BASE}/api/admin/questions/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': String(currentUser.id)
+                    },
+                    body: JSON.stringify({ questions })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    alert(`成功导入 ${result.imported} 道题`);
+                    loadQuestionsAdmin();
+                } else {
+                    alert('导入失败：' + (result.error || '未知错误'));
+                }
+            } catch (err) {
+                alert('导入失败：' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        event.target.value = ''; // 重置 input
+    }
+
+    // ---------- 用户管理（superadmin） ----------
     async function loadUserList() {
         try {
             const res = await fetch(`${API_BASE}/api/admin/users`, {
@@ -655,6 +750,23 @@
         container.appendChild(div);
     }
 
+    function loadOptionsToEditor(options) {
+        const container = $('optionsEditorContainer');
+        container.innerHTML = '';
+        options.forEach((opt, idx) => {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '8px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <span class="opt-label-static">${getOptionLabel(idx)}</span>
+                <input type="text" value="${opt}" placeholder="选项内容..." style="flex:1; padding:6px 12px; border:1.5px solid #e2e8f0; border-radius:8px;" />
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
     function getOptionsFromEditor() {
         const inputs = $('optionsEditorContainer').querySelectorAll('input[type="text"]');
         return Array.from(inputs).map(inp => inp.value.trim()).filter(v => v !== '');
@@ -680,12 +792,6 @@
             `;
             container.appendChild(div);
         }
-    }
-
-    function editQuestion(id) {
-        alert('请在下方表单中修改内容后保存，当前编辑 ID 已填入');
-        $('editId').value = id;
-        $('editorTitle').innerHTML = '<i class="fas fa-edit"></i> 编辑题目';
     }
 
     async function saveQuestion() {
@@ -783,6 +889,7 @@
     window.clearAllData = clearAllData;
     window.exportCSV = exportCSV;
     window.loadUserList = loadUserList;
+    window.importExcel = importExcel;
 </script>
 </body>
 </html>
